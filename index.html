@@ -1,0 +1,124 @@
+<html>
+<head>
+    <title>Leaflet</title>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
+    <script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+    <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+    <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+    <link rel="stylesheet" href="/resources/demos/style.css" />
+
+</head>
+<body>
+<!-- define a DIV into which the map will appear. Make it take up the whole window -->
+<div style="width:100%; height:90%" id="map"></div>
+<div id="slider"><div class="ui-slider-handle"></div></div>
+<div id="date_slider"><div class="ui-slider-handle"></div></div>
+<script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+<script src="./proj4.js"></script>
+<script src="./proj4leaflet.js"></script>
+<script src="./geoportalLeaflet.js"></script>
+<script src="./underscore.js"></script>
+<script type='text/javascript'>
+    var epsg_3413 = new L.Proj.CRS('EPSG:3413',
+            '+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 ' +
+                    '+k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
+            {
+                resolutions: [8192, 4096, 2048, 1024,
+                    512, 256, 128, 64, 32, 16,
+                    8, 4, 2, 1, 0.5] // 3 example zoom level resolutions
+            }),
+            epsg_3031 = new L.Proj.CRS('EPSG:3031',
+                    '+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0' +
+                            ' +ellps=WGS84 +datum=WGS84 +units=m +no_defs', // Antarctica
+                    {
+                        resolutions: [8192, 4096, 2048, 1024,
+                            512, 256, 128, 64, 32, 16,
+                            8, 4, 2, 1, 0.5] // 3 example zoom level resolutions
+            }),
+            map = new L.Map('map',
+                    {
+                        crs: epsg_3413,
+                        worldCopyJump: false,
+                        continuousWorld: true
+                    }
+            );
+            map.setView([63,0],2);
+
+    var currentDate = new Date();
+            year = currentDate.getFullYear().toString(),
+            month = (currentDate.getMonth() + 1).toString(),
+            day = currentDate.getDate().toString(),
+            dateFormat = year+"-"+month+"-"+day,
+            modis_b_url ="http://map1b.vis.earthdata.nasa.gov/wmts-arctic/wmts.cgi?TIME="+ dateFormat+
+                "&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_CorrectedReflectance_TrueColor&" +
+                "STYLE=&TILEMATRIXSET={TileMatrixSet}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image%2Fjpeg";
+
+    var modis_b_layer = L.tileLayer(modis_b_url,
+            {TileMatrixSet: "EPSG3413_250m", opacity:1, continuousWorld:true,transparent: true});
+    modis_b_layer.addTo(map);
+
+    L.tileLayer("http://map1a.vis.earthdata.nasa.gov/wmts-arctic/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&" +
+            "VERSION=1.0.0&LAYER=arctic_coastlines_3413&STYLE=&TILEMATRIXSET=EPSG3413_250m&TILEMATRIX={z}&" +
+            "TILEROW={y}&TILECOL={x}&FORMAT=image%2Fpng",
+            {TileMatrixSet: "EPSG3413_250m", continuousWorld:true,transparent: true}).addTo(map);
+
+    $("#slider").slider({
+        value: 50,
+        slide: function(e, ui) {
+            modis_b_layer.setOpacity(ui.value / 100);
+        }
+    });
+    $("#date_slider").slider({
+        value: 100,
+        slide: function(e, ui) {
+            ui = 100 - ui['value'];
+            var y = currentDate.getFullYear(),
+                    m = currentDate.getMonth(),
+                    d = currentDate.getDate();
+                    d = d - ui;
+                    var newDate =  new Date(y, m, d);
+            var year = newDate.getFullYear().toString();
+            var month = (newDate.getMonth() + 1).toString();
+            var day = newDate.getDate().toString();
+            var newDateFormat = year+"-"+month+"-"+day;
+
+            var b_display_template ="http://map1b.vis.earthdata.nasa.gov/wmts-arctic/wmts.cgi?TIME=" + newDateFormat +
+                    "&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_CorrectedReflectance_TrueColor&" +
+                    "STYLE=&TILEMATRIXSET={TileMatrixSet}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image%2Fjpeg";
+
+            modis_b_layer.setUrl(b_display_template);
+        }
+    });
+//
+//    var matrixIds3857= new Array(22);
+//    for (var i= 0; i<22; i++) {
+//        matrixIds3857[i]= {
+//            identifier    : "" + i,
+//            topLeftCorner : new L.LatLng(20037508,-20037508)
+//        };
+//    }
+//
+//    var ign = new L.TileLayer.WMTS("http://map1a.vis.earthdata.nasa.gov/wmts-arctic/wmts.cgi?",
+//            {
+//                layer: 'MODIS_Terra_CorrectedReflectance_TrueColor',
+//                time: "2013-08-24",
+//                style: 'normal',
+//                matrixIds: matrixIds3857,
+//                tilematrixSet: "EPSG3413_250m",
+//                format: 'image/jpeg',
+//                continuousWorld: true,
+//                transparent: true
+//            }
+//    );
+//
+//
+//
+//    L.control.scale({'position':'bottomleft','metric':true,'imperial':false}).addTo(map);
+//
+//    map.addLayer(ign);
+ 
+</script>
+
+</body>
+</html>

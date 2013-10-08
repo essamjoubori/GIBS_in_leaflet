@@ -1,0 +1,1 @@
+Open index.html in a browser.  The top jQuery slider controls the opacity of the GIBS layer, and the bottom controls the date of the GIBS layer.  It should automatically refresh.
